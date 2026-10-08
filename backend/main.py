@@ -24,6 +24,10 @@ from backend.database.database import get_db
 # Importamos los modelos de usuarios, conversaciones y mensajes
 from backend.database.models import User, Conversation, Message
 
+# Importamos las rutas para administrar documentos
+from backend.services.document_router import router as document_router
+
+
 
 # ==========================================
 # CONFIGURACIÓN DE FASTAPI
@@ -39,6 +43,8 @@ app = FastAPI(
 # Registramos las rutas de autenticación
 app.include_router(auth_router)
 
+# Registramos las rutas para cargar documentos
+app.include_router(document_router)
 
 # ==========================================
 # ESQUEMAS DEL CHAT

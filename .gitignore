@@ -11,3 +11,6 @@ chroma_db/
 
 # Archivos con variables privadas
 .env
+
+# Uploaded documents
+documents/uploads/
