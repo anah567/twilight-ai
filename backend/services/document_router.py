@@ -1,5 +1,6 @@
 
-# Importamos herramientas para trabajar con archivos y rutas
+# Importamos herramientas para identificar archivos y crear nombres únicos
+import hashlib
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,7 +24,6 @@ router = APIRouter(
     prefix="/documents",
     tags=["Documents"]
 )
-
 
 # Definimos la carpeta donde guardaremos los archivos
 UPLOAD_DIRECTORY = Path("documents/uploads")
@@ -87,41 +87,63 @@ async def upload_document(
             detail="File cannot contain only whitespace."
         )
 
+    # Generamos una huella digital basada en el contenido
+    content_hash = hashlib.sha256(content).hexdigest()
+
+    # Consultamos ChromaDB para buscar documentos idénticos
+    vectorstore = get_vectorstore()
+
+    existing_documents = vectorstore.get(
+        where={"content_hash": content_hash}
+    )
+
+    # Rechazamos el documento si ya está indexado
+    if existing_documents["ids"]:
+        raise HTTPException(
+            status_code=409,
+            detail="This document has already been uploaded."
+        )
+
     # Creamos la carpeta de archivos si todavía no existe
     UPLOAD_DIRECTORY.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    # Generamos un nombre único para evitar sobrescribir archivos
+    # Generamos un identificador único para el documento
     document_id = uuid4().hex
+
+    # Conservamos el nombre original solo como información
     original_filename = Path(file.filename).name
+
+    # Creamos un nombre seguro y único para guardarlo
     saved_filename = f"{document_id}.txt"
 
     # Definimos la ubicación del archivo
     file_path = UPLOAD_DIRECTORY / saved_filename
 
-    # Creamos el documento con información de su origen
+    # Creamos el documento con sus metadatos
     document = Document(
         page_content=text_content,
         metadata={
             "source": file_path.as_posix(),
             "filename": original_filename,
             "uploaded_by": current_user.id,
-            "document_id": document_id
+            "document_id": document_id,
+            "content_hash": content_hash
         }
     )
 
-    # Configuramos cómo dividiremos el texto
+    # Configuramos la división del texto en fragmentos
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
     )
 
-    # Dividimos el documento en fragmentos
+    # Dividimos el documento
     chunks = text_splitter.split_documents([document])
 
-    # Generamos identificadores únicos para los fragmentos
+    # Generamos identificadores únicos para cada fragmento
     chunk_ids = [
         f"{document_id}:{index}"
         for index in range(len(chunks))
@@ -132,10 +154,7 @@ async def upload_document(
 
     try:
 
-        # Obtenemos nuestra base vectorial
-        vectorstore = get_vectorstore()
-
-        # Almacenamos los fragmentos y sus embeddings
+        # Almacenamos los fragmentos en ChromaDB
         vectorstore.add_documents(
             documents=chunks,
             ids=chunk_ids
@@ -146,7 +165,7 @@ async def upload_document(
         # Eliminamos el archivo si falla la indexación
         file_path.unlink(missing_ok=True)
 
-        # Informamos que no fue posible procesar el documento
+        # Informamos que ocurrió un error
         raise HTTPException(
             status_code=500,
             detail="Document indexing failed."
