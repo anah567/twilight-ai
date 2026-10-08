@@ -150,3 +150,53 @@ def test_conversation_isolation(client):
 
     # El backend no debe permitir el acceso
     assert response.status_code == 404
+
+
+# Comprobamos que el backend maneje errores del modelo
+def test_chat_handles_ai_service_failure(client):
+
+    # Creamos un usuario autenticado
+    token = create_user_token(
+        client,
+        "bella",
+        "bella@example.com"
+    )
+
+    # Simulamos que Ollama deja de funcionar
+    with patch(
+        "backend.main.ask_agent",
+        side_effect=ConnectionError("Ollama is unavailable")
+    ):
+
+        response = client.post(
+            "/chat",
+            headers={
+                "Authorization": f"Bearer {token}"
+            },
+            json={
+                "question": "Who is Edward Cullen?"
+            }
+        )
+
+    # El backend debe devolver un error controlado
+    assert response.status_code == 503
+
+    # Comprobamos que el mensaje sea seguro
+    assert response.json()["detail"] == (
+        "The AI service is temporarily unavailable. "
+        "Please try again later."
+    )
+
+    # El error técnico no debe aparecer en la respuesta
+    assert "Ollama is unavailable" not in response.text
+
+    # Verificamos que no se haya guardado la conversación fallida
+    history_response = client.get(
+        "/conversations",
+        headers={
+            "Authorization": f"Bearer {token}"
+        }
+    )
+
+    assert history_response.status_code == 200
+    assert history_response.json() == []

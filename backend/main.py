@@ -1,6 +1,11 @@
+# Importamos herramientas para configurar variables de entorno
+import os
 
 # Importamos FastAPI y las herramientas para manejar errores
 from fastapi import FastAPI, Depends, HTTPException
+
+# Importamos CORS para permitir la comunicación con el frontend
+from fastapi.middleware.cors import CORSMiddleware
 
 # Importamos BaseModel para validar los datos recibidos
 from pydantic import BaseModel, Field
@@ -28,7 +33,6 @@ from backend.database.models import User, Conversation, Message
 from backend.services.document_router import router as document_router
 
 
-
 # ==========================================
 # CONFIGURACIÓN DE FASTAPI
 # ==========================================
@@ -40,11 +44,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Obtenemos los dominios autorizados desde las variables de entorno
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_URL",
+        "http://localhost:5173"
+    ).split(",")
+    if origin.strip()
+]
+
+# Permitimos solicitudes únicamente desde los dominios autorizados
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
 # Registramos las rutas de autenticación
 app.include_router(auth_router)
 
-# Registramos las rutas para cargar documentos
+# Registramos las rutas para administrar documentos
 app.include_router(document_router)
+
 
 # ==========================================
 # ESQUEMAS DEL CHAT
@@ -57,7 +81,10 @@ class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
 
     # Identificador opcional de una conversación existente
-    conversation_id: int | None = Field(default=None, ge=1)
+    conversation_id: int | None = Field(
+        default=None,
+        ge=1
+    )
 
 
 # Definimos cómo devolveremos la respuesta
@@ -119,7 +146,9 @@ def chat(
         # Consultamos los mensajes anteriores en orden
         previous_messages = db.scalars(
             select(Message)
-            .where(Message.conversation_id == conversation.id)
+            .where(
+                Message.conversation_id == conversation.id
+            )
             .order_by(Message.id.asc())
         ).all()
 
@@ -154,12 +183,36 @@ def chat(
         # Agregamos la conversación a la sesión
         db.add(conversation)
 
-    # Generamos la respuesta utilizando el agente RAG
-    # El historial ayuda a interpretar preguntas de seguimiento
-    answer = ask_agent(
-        question=request.question,
-        chat_history=chat_history
-    )
+    # ==========================================
+    # GENERACIÓN DE RESPUESTA CON OLLAMA
+    # ==========================================
+
+    # Intentamos generar una respuesta utilizando nuestro agente RAG
+    try:
+
+        # El historial ayuda a interpretar preguntas de seguimiento
+        answer = ask_agent(
+            question=request.question,
+            chat_history=chat_history
+        )
+
+    except Exception:
+
+        # Descartamos cualquier cambio pendiente en la base de datos
+        db.rollback()
+
+        # Devolvemos un mensaje seguro sin exponer errores internos
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "The AI service is temporarily unavailable. "
+                "Please try again later."
+            )
+        )
+
+    # ==========================================
+    # GUARDAR CONVERSACIÓN Y MENSAJES
+    # ==========================================
 
     # Obtenemos el identificador de la conversación
     db.flush()
@@ -207,8 +260,12 @@ def get_conversations(
     # Consultamos únicamente las conversaciones del usuario
     conversations = db.scalars(
         select(Conversation)
-        .where(Conversation.user_id == current_user.id)
-        .order_by(Conversation.created_at.desc())
+        .where(
+            Conversation.user_id == current_user.id
+        )
+        .order_by(
+            Conversation.created_at.desc()
+        )
     ).all()
 
     # Preparamos el historial
@@ -256,8 +313,12 @@ def get_conversation(
     # Consultamos los mensajes de la conversación
     messages = db.scalars(
         select(Message)
-        .where(Message.conversation_id == conversation.id)
-        .order_by(Message.id.asc())
+        .where(
+            Message.conversation_id == conversation.id
+        )
+        .order_by(
+            Message.id.asc()
+        )
     ).all()
 
     # Preparamos los mensajes para devolverlos

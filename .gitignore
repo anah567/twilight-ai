@@ -1,16 +1,27 @@
+
+# Python environment
 .venv/
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Environment variables and secrets
 .env
+.env.*
+
+# Local vector database
 chroma_db/
 
-# Bases de datos locales
+# Local databases
 *.db
 *.sqlite
 *.sqlite3
 
-# Archivos con variables privadas
-.env
-
 # Uploaded documents
 documents/uploads/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
