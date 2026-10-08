@@ -48,25 +48,35 @@ def validate_context(state: AgentState) -> dict:
         return {"is_answerable": False}
 
     
-    # Creamos instrucciones más claras para validar la evidencia
+    # Creamos instrucciones para verificar si existe evidencia suficiente
     prompt = f"""
-You are an evidence verification assistant.
+You are a strict evidence verification assistant.
 
-Your task is to determine whether the provided context contains
+Your task is to decide whether the provided context contains
 enough information to answer the user's question.
 
-IMPORTANT RULES:
+RULES:
 1. Use ONLY the provided context.
 2. Do not use outside knowledge.
-3. Accept information that is directly stated in the context.
-4. The answer may appear across multiple sentences.
-5. Do not require the exact wording of the question to appear.
-6. If the answer can be obtained directly from the context, reply YES.
-7. If any required information is missing, reply NO.
-8. Reply with ONLY one word: YES or NO.
+3. Do not invent missing information.
+4. For "Who is..." questions, a description of the person is sufficient.
+5. For questions about specific facts, those facts must appear in the context.
+6. Information may be spread across multiple sentences.
+7. Do not require the exact wording of the question to appear.
+8. Reply with exactly one word: YES or NO.
 
-EXAMPLE:
+EXAMPLE 1:
+Context:
+Emma Smith is a doctor who lives in London.
+She works at a hospital.
 
+Question:
+Who is Emma Smith?
+
+Decision:
+YES
+
+EXAMPLE 2:
 Context:
 Emma lives with her father, John Smith.
 Her mother is Mary Smith.
@@ -76,6 +86,16 @@ Who are Emma's parents?
 
 Decision:
 YES
+
+EXAMPLE 3:
+Context:
+Emma Smith is a doctor who lives in London.
+
+Question:
+What is Emma Smith's exact date of birth?
+
+Decision:
+NO
 
 NOW EVALUATE:
 
@@ -87,6 +107,7 @@ Question:
 
 Decision:
 """
+
 
 
     # Consultamos al modelo
