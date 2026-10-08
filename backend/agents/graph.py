@@ -21,6 +21,7 @@ FALLBACK_ANSWER = (
 # Definimos la información que guarda nuestro agente
 class AgentState(TypedDict):
     question: str
+    chat_history: str
     context: str
     is_answerable: bool
     answer: str
@@ -173,7 +174,7 @@ Decision:
     # Consultamos al modelo
     response = model.invoke(prompt)
 
-        # Normalizamos la respuesta del modelo
+    # Normalizamos la respuesta del modelo
     decision = str(response.content).strip().upper()
 
 
