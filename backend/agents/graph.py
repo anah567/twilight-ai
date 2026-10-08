@@ -26,6 +26,68 @@ class AgentState(TypedDict):
     answer: str
 
 
+# Definimos la información que utiliza nuestro agente
+class AgentState(TypedDict):
+    question: str
+    chat_history: str
+    context: str
+    is_answerable: bool
+    answer: str
+
+
+# Función para convertir preguntas de seguimiento en preguntas completas
+def rewrite_question(state: AgentState) -> dict:
+
+    # Obtenemos la pregunta actual
+    question = state["question"]
+
+    # Obtenemos el historial de la conversación
+    chat_history = state["chat_history"]
+
+    # Si no hay historial, conservamos la pregunta original
+    if not chat_history.strip():
+        return {"question": question}
+
+    # Pedimos al modelo que interprete la pregunta usando el historial
+    prompt = f"""
+You are a question rewriting assistant.
+
+Your task is to rewrite the current question so it can be
+understood without reading the conversation history.
+
+RULES:
+1. Use the conversation history only to resolve references.
+2. Do not answer the question.
+3. Do not invent facts or introduce new information.
+4. Keep the original meaning of the question.
+5. If the question is already clear, return it unchanged.
+6. Return only the rewritten question.
+7. Write in English.
+
+Conversation history:
+{chat_history}
+
+Current question:
+{question}
+
+Rewritten question:
+"""
+
+    # Enviamos las instrucciones al modelo
+    response = model.invoke(prompt)
+
+    # Obtenemos la pregunta reformulada
+    rewritten_question = str(response.content).strip()
+
+    # Si el modelo no devuelve texto, usamos la pregunta original
+    if not rewritten_question:
+        rewritten_question = question
+
+    # Devolvemos la pregunta que utilizaremos para buscar documentos
+    return {"question": rewritten_question}
+
+
+
 # Primer nodo: recuperar documentos relevantes
 def retrieve_documents(state: AgentState) -> dict:
 
@@ -108,8 +170,6 @@ Question:
 Decision:
 """
 
-
-
     # Consultamos al modelo
     response = model.invoke(prompt)
 
@@ -169,20 +229,27 @@ def reject_question(state: AgentState) -> dict:
     return {"answer": FALLBACK_ANSWER}
 
 
-# Creamos nuestro grafo
+
+# Creamos nuestro grafo utilizando el estado del agente
 graph_builder = StateGraph(AgentState)
 
-# Registramos los nodos
+# Registramos todos los nodos del agente
+graph_builder.add_node("rewrite_question", rewrite_question)
 graph_builder.add_node("retrieve_documents", retrieve_documents)
 graph_builder.add_node("validate_context", validate_context)
 graph_builder.add_node("answer_question", answer_question)
 graph_builder.add_node("reject_question", reject_question)
 
-# Definimos el inicio del flujo
-graph_builder.add_edge(START, "retrieve_documents")
+# Primero interpretamos la pregunta usando el historial
+graph_builder.add_edge(START, "rewrite_question")
+
+# Después buscamos documentos relacionados con la pregunta
+graph_builder.add_edge("rewrite_question", "retrieve_documents")
+
+# Verificamos si los documentos contienen información suficiente
 graph_builder.add_edge("retrieve_documents", "validate_context")
 
-# Elegimos el siguiente nodo según la validación
+# Elegimos si podemos responder o debemos rechazar la pregunta
 graph_builder.add_conditional_edges(
     "validate_context",
     route_after_validation,
@@ -192,24 +259,27 @@ graph_builder.add_conditional_edges(
     }
 )
 
-# Ambos caminos terminan el proceso
+# Finalizamos después de responder
 graph_builder.add_edge("answer_question", END)
+
+# Finalizamos después de rechazar una pregunta
 graph_builder.add_edge("reject_question", END)
 
-# Compilamos el grafo
+# Compilamos nuestro agente
 agent_graph = graph_builder.compile()
 
 
-# Función principal para consultar nuestro agente
-def ask_agent(question: str) -> str:
+# Función principal para ejecutar nuestro agente
+def ask_agent(question: str, chat_history: str = "") -> str:
 
-    # Ejecutamos el grafo con su estado inicial
+    # Ejecutamos el grafo con la pregunta y el historial
     result = agent_graph.invoke({
         "question": question,
+        "chat_history": chat_history,
         "context": "",
         "is_answerable": False,
         "answer": ""
     })
 
-    # Devolvemos la respuesta final
+    # Devolvemos la respuesta del agente
     return result["answer"]

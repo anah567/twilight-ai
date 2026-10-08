@@ -1,9 +1,13 @@
 
-# Importamos FastAPI y sus herramientas de dependencias
-from fastapi import FastAPI, Depends
+# Importamos FastAPI y las herramientas para manejar errores
+from fastapi import FastAPI, Depends, HTTPException
 
 # Importamos BaseModel para validar los datos recibidos
 from pydantic import BaseModel, Field
+
+# Importamos las herramientas para consultar la base de datos
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 # Importamos nuestro agente construido con LangGraph
 from backend.agents.graph import ask_agent
@@ -14,9 +18,16 @@ from backend.auth.router import router as auth_router
 # Importamos la función para verificar al usuario autenticado
 from backend.auth.dependencies import get_current_user
 
-# Importamos el modelo de usuario
-from backend.database.models import User
+# Importamos nuestra conexión con la base de datos
+from backend.database.database import get_db
 
+# Importamos los modelos de usuarios, conversaciones y mensajes
+from backend.database.models import User, Conversation, Message
+
+
+# ==========================================
+# CONFIGURACIÓN DE FASTAPI
+# ==========================================
 
 # Creamos nuestra aplicación
 app = FastAPI(
@@ -25,16 +36,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
 # Registramos las rutas de autenticación
 app.include_router(auth_router)
 
 
-# Definimos cómo debe llegar una pregunta
+# ==========================================
+# ESQUEMAS DEL CHAT
+# ==========================================
+
+# Definimos los datos que recibe nuestro chat
 class ChatRequest(BaseModel):
 
-    # La pregunta debe contener al menos un carácter
+    # Pregunta enviada por el usuario
     question: str = Field(min_length=1)
+
+    # Identificador opcional de una conversación existente
+    conversation_id: int | None = Field(default=None, ge=1)
 
 
 # Definimos cómo devolveremos la respuesta
@@ -43,26 +60,216 @@ class ChatResponse(BaseModel):
     # Respuesta generada por nuestro agente
     answer: str
 
+    # Identificador de la conversación
+    conversation_id: int
 
-# Endpoint principal de nuestra API
+
+# ==========================================
+# ENDPOINT PRINCIPAL
+# ==========================================
+
 @app.get("/")
 def home():
 
+    # Devolvemos un mensaje para verificar que la API funciona
     return {
         "message": "Welcome to Twilight AI",
         "status": "Backend running successfully"
     }
 
 
-# Endpoint protegido para conversar con nuestro agente
+# ==========================================
+# CHAT CON MEMORIA CONVERSACIONAL
+# ==========================================
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(
     request: ChatRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
 
-    # Solo llegamos aquí si el usuario está autenticado
-    answer = ask_agent(request.question)
+    # Inicializamos el historial de la conversación
+    chat_history = ""
 
-    # Devolvemos la respuesta generada por el agente
-    return ChatResponse(answer=answer)
+    # Verificamos si el usuario quiere continuar una conversación
+    if request.conversation_id is not None:
+
+        # Buscamos la conversación y verificamos su propietario
+        conversation = db.scalar(
+            select(Conversation).where(
+                Conversation.id == request.conversation_id,
+                Conversation.user_id == current_user.id
+            )
+        )
+
+        # Rechazamos conversaciones inexistentes o de otros usuarios
+        if conversation is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Conversation not found."
+            )
+
+        # Consultamos los mensajes anteriores en orden
+        previous_messages = db.scalars(
+            select(Message)
+            .where(Message.conversation_id == conversation.id)
+            .order_by(Message.id.asc())
+        ).all()
+
+        # Preparamos el historial para nuestro agente
+        history_lines = []
+
+        for message in previous_messages:
+
+            # Identificamos quién escribió el mensaje
+            role = (
+                "User"
+                if message.role == "user"
+                else "Assistant"
+            )
+
+            # Agregamos el mensaje al historial
+            history_lines.append(
+                f"{role}: {message.content}"
+            )
+
+        # Unimos los mensajes en un solo texto
+        chat_history = "\n".join(history_lines)
+
+    else:
+
+        # Creamos una conversación nueva para el usuario
+        conversation = Conversation(
+            title=request.question[:200],
+            user_id=current_user.id
+        )
+
+        # Agregamos la conversación a la sesión
+        db.add(conversation)
+
+    # Generamos la respuesta utilizando el agente RAG
+    # El historial ayuda a interpretar preguntas de seguimiento
+    answer = ask_agent(
+        question=request.question,
+        chat_history=chat_history
+    )
+
+    # Obtenemos el identificador de la conversación
+    db.flush()
+
+    # Creamos el mensaje enviado por el usuario
+    user_message = Message(
+        conversation_id=conversation.id,
+        role="user",
+        content=request.question
+    )
+
+    # Creamos el mensaje generado por nuestro asistente
+    assistant_message = Message(
+        conversation_id=conversation.id,
+        role="assistant",
+        content=answer
+    )
+
+    # Agregamos ambos mensajes a la base de datos
+    db.add_all([
+        user_message,
+        assistant_message
+    ])
+
+    # Guardamos la conversación y sus mensajes
+    db.commit()
+
+    # Devolvemos la respuesta y el identificador del chat
+    return ChatResponse(
+        answer=answer,
+        conversation_id=conversation.id
+    )
+
+
+# ==========================================
+# CONSULTAR HISTORIAL DE CONVERSACIONES
+# ==========================================
+
+@app.get("/conversations")
+def get_conversations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    # Consultamos únicamente las conversaciones del usuario
+    conversations = db.scalars(
+        select(Conversation)
+        .where(Conversation.user_id == current_user.id)
+        .order_by(Conversation.created_at.desc())
+    ).all()
+
+    # Preparamos el historial
+    history = []
+
+    for conversation in conversations:
+
+        # Agregamos la información de cada conversación
+        history.append({
+            "id": conversation.id,
+            "title": conversation.title,
+            "created_at": conversation.created_at
+        })
+
+    # Devolvemos las conversaciones del usuario
+    return history
+
+
+# ==========================================
+# CONSULTAR MENSAJES DE UNA CONVERSACIÓN
+# ==========================================
+
+@app.get("/conversations/{conversation_id}")
+def get_conversation(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    # Buscamos la conversación y verificamos su propietario
+    conversation = db.scalar(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id
+        )
+    )
+
+    # Rechazamos conversaciones inexistentes o de otros usuarios
+    if conversation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found."
+        )
+
+    # Consultamos los mensajes de la conversación
+    messages = db.scalars(
+        select(Message)
+        .where(Message.conversation_id == conversation.id)
+        .order_by(Message.id.asc())
+    ).all()
+
+    # Preparamos los mensajes para devolverlos
+    message_history = []
+
+    for message in messages:
+
+        message_history.append({
+            "id": message.id,
+            "role": message.role,
+            "content": message.content,
+            "created_at": message.created_at
+        })
+
+    # Devolvemos la conversación con sus mensajes
+    return {
+        "id": conversation.id,
+        "title": conversation.title,
+        "created_at": conversation.created_at,
+        "messages": message_history
+    }
