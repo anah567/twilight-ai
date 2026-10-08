@@ -181,3 +181,100 @@ async def upload_document(
         "chunks_created": len(chunks),
         "uploaded_by": current_user.username
     }
+
+
+# Endpoint protegido para consultar los documentos cargados
+@router.get("/")
+def list_documents(
+    current_user: User = Depends(get_current_admin)
+):
+
+    # Obtenemos la base vectorial
+    vectorstore = get_vectorstore()
+
+    # Consultamos los metadatos de los documentos
+    results = vectorstore.get(
+        include=["metadatas"]
+    )
+
+    # Creamos un diccionario para evitar repetir documentos
+    documents = {}
+
+    # Recorremos los metadatos de cada fragmento
+    for metadata in results["metadatas"]:
+
+        # Ignoramos fragmentos que no provienen de cargas
+        if not metadata or "document_id" not in metadata:
+            continue
+
+        # Obtenemos el identificador del documento
+        document_id = metadata["document_id"]
+
+        # Guardamos una sola entrada por documento
+        if document_id not in documents:
+            documents[document_id] = {
+                "document_id": document_id,
+                "filename": metadata.get("filename"),
+                "uploaded_by": metadata.get("uploaded_by")
+            }
+
+    # Devolvemos los documentos encontrados
+    return {
+        "total_documents": len(documents),
+        "documents": list(documents.values())
+    }
+
+
+
+# Endpoint protegido para eliminar documentos cargados
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: str,
+    current_user: User = Depends(get_current_admin)
+):
+
+    # Obtenemos nuestra base vectorial
+    vectorstore = get_vectorstore()
+
+    # Buscamos los fragmentos del documento solicitado
+    results = vectorstore.get(
+        where={"document_id": document_id},
+        include=["metadatas"]
+    )
+
+    # Verificamos que el documento exista
+    if not results["ids"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    # Construimos la ruta usando el identificador del documento
+    # y no una ruta proporcionada por el usuario
+    file_path = UPLOAD_DIRECTORY / f"{document_id}.txt"
+
+    # Verificamos que el identificador tenga un formato válido
+    try:
+        normalized_id = str(uuid4().__class__(document_id))
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid document ID."
+        )
+
+    # Utilizamos el identificador validado
+    file_path = UPLOAD_DIRECTORY / f"{normalized_id.replace('-', '')}.txt"
+
+    # Eliminamos los fragmentos de ChromaDB
+    vectorstore.delete(ids=results["ids"])
+
+    # Eliminamos el archivo original si todavía existe
+    file_path.unlink(missing_ok=True)
+
+    # Confirmamos la eliminación
+    return {
+        "message": "Document deleted successfully.",
+        "document_id": document_id,
+        "chunks_deleted": len(results["ids"])
+    }
+
