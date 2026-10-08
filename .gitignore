@@ -3,3 +3,11 @@ __pycache__/
 *.pyc
 .env
 chroma_db/
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos con variables privadas
+.env
