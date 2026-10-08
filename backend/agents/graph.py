@@ -5,102 +5,168 @@ from langgraph.graph import StateGraph, START, END
 # Importamos TypedDict para definir el estado del agente
 from typing import TypedDict
 
-# Importamos nuestro modelo de inteligencia artificial
+# Importamos nuestro modelo de Ollama
 from backend.agents.model import model
 
-# Importamos la función que busca información en ChromaDB
+# Importamos la búsqueda de documentos
 from backend.vectorstore.retriever import search_documents
 
 
-# Definimos la información que guardará nuestro agente
+# Mensaje que utilizaremos cuando no exista información suficiente
+FALLBACK_ANSWER = (
+    "I don't have enough information to answer that question."
+)
+
+
+# Definimos la información que guarda nuestro agente
 class AgentState(TypedDict):
     question: str
     context: str
+    is_answerable: bool
     answer: str
 
 
-# Primer nodo: buscar información en nuestra base de conocimiento
+# Primer nodo: recuperar documentos relevantes
 def retrieve_documents(state: AgentState) -> dict:
 
-    # Obtenemos la pregunta del usuario
-    question = state["question"]
-
     # Buscamos documentos relacionados con la pregunta
-    documents = search_documents(question)
+    documents = search_documents(state["question"])
 
-    # Unimos el contenido de los documentos encontrados
+    # Unimos los fragmentos recuperados
     context = "\n\n".join(
         document.page_content for document in documents
     )
 
-    # Guardamos el contexto para utilizarlo en el siguiente nodo
     return {"context": context}
 
 
-# Segundo nodo: generar una respuesta utilizando los documentos
+# Segundo nodo: verificar si los documentos contienen la respuesta
+def validate_context(state: AgentState) -> dict:
+
+    # Si no encontramos documentos, rechazamos la pregunta
+    if not state["context"].strip():
+        return {"is_answerable": False}
+
+    # Pedimos al modelo evaluar la información disponible
+    prompt = f"""
+You are a strict evidence validator.
+
+Determine whether the context contains enough information
+to answer the question.
+
+Rules:
+- Use ONLY the provided context.
+- Do not use outside knowledge.
+- Do not guess or infer missing facts.
+- Reply with exactly YES or NO.
+- Reply YES only when the answer is explicitly supported.
+
+Context:
+{state["context"]}
+
+Question:
+{state["question"]}
+
+Decision:
+"""
+
+    # Consultamos al modelo
+    response = model.invoke(prompt)
+
+    # Normalizamos la respuesta para evitar problemas con espacios
+    decision = str(response.content).strip().upper()
+
+    # Solo aceptamos una respuesta exactamente igual a YES
+    return {"is_answerable": decision == "YES"}
+
+
+# Decidimos qué camino seguirá el agente
+def route_after_validation(state: AgentState) -> str:
+
+    # Si existe evidencia, podemos generar la respuesta
+    if state["is_answerable"]:
+        return "answer_question"
+
+    # Si falta evidencia, rechazamos la pregunta
+    return "reject_question"
+
+
+# Tercer nodo: generar una respuesta basada en documentos
 def answer_question(state: AgentState) -> dict:
 
-    # Obtenemos la pregunta y la información recuperada
-    question = state["question"]
-    context = state["context"]
-
-    # Verificamos si encontramos información
-    if not context.strip():
-        return {
-            "answer": "I don't have enough information to answer that question."
-        }
-
-    # Creamos instrucciones para que el modelo utilice los documentos
+    # Construimos instrucciones para responder únicamente con evidencia
     prompt = f"""
 You are Twilight AI, an assistant specialized in the Twilight saga.
 
-Answer the user's question using ONLY the information
-provided in the context below.
+Answer the question using ONLY the provided context.
 
 Rules:
 - Do not invent information.
 - Do not use outside knowledge.
-- If the context does not contain the answer, say:
-  "I don't have enough information to answer that question."
+- Do not add unsupported details.
+- If the answer is not supported, reply exactly:
+  "{FALLBACK_ANSWER}"
 - Answer in English.
 
 Context:
-{context}
+{state["context"]}
 
 Question:
-{question}
+{state["question"]}
 """
 
-    # Enviamos las instrucciones a nuestro modelo Qwen
+    # Generamos la respuesta
     response = model.invoke(prompt)
 
-    # Guardamos la respuesta generada
     return {"answer": str(response.content)}
 
 
-# Creamos el grafo de nuestro agente
+# Nodo encargado de rechazar preguntas sin información suficiente
+def reject_question(state: AgentState) -> dict:
+
+    # Devolvemos el mensaje de rechazo
+    return {"answer": FALLBACK_ANSWER}
+
+
+# Creamos nuestro grafo
 graph_builder = StateGraph(AgentState)
 
-# Agregamos los dos nodos
+# Registramos los nodos
 graph_builder.add_node("retrieve_documents", retrieve_documents)
+graph_builder.add_node("validate_context", validate_context)
 graph_builder.add_node("answer_question", answer_question)
+graph_builder.add_node("reject_question", reject_question)
 
-# Definimos el orden de ejecución
+# Definimos el inicio del flujo
 graph_builder.add_edge(START, "retrieve_documents")
-graph_builder.add_edge("retrieve_documents", "answer_question")
+graph_builder.add_edge("retrieve_documents", "validate_context")
+
+# Elegimos el siguiente nodo según la validación
+graph_builder.add_conditional_edges(
+    "validate_context",
+    route_after_validation,
+    {
+        "answer_question": "answer_question",
+        "reject_question": "reject_question"
+    }
+)
+
+# Ambos caminos terminan el proceso
 graph_builder.add_edge("answer_question", END)
+graph_builder.add_edge("reject_question", END)
 
 # Compilamos el grafo
 agent_graph = graph_builder.compile()
 
 
-# Función para hacer preguntas a nuestro agente
+# Función principal para consultar nuestro agente
 def ask_agent(question: str) -> str:
 
-    # Ejecutamos el grafo con la pregunta del usuario
+    # Ejecutamos el grafo con su estado inicial
     result = agent_graph.invoke({
         "question": question,
         "context": "",
+        "is_answerable": False,
         "answer": ""
     })
 
