@@ -47,19 +47,37 @@ def validate_context(state: AgentState) -> dict:
     if not state["context"].strip():
         return {"is_answerable": False}
 
-    # Pedimos al modelo evaluar la información disponible
+    
+    # Creamos instrucciones más claras para validar la evidencia
     prompt = f"""
-You are a strict evidence validator.
+You are an evidence verification assistant.
 
-Determine whether the context contains enough information
-to answer the question.
+Your task is to determine whether the provided context contains
+enough information to answer the user's question.
 
-Rules:
-- Use ONLY the provided context.
-- Do not use outside knowledge.
-- Do not guess or infer missing facts.
-- Reply with exactly YES or NO.
-- Reply YES only when the answer is explicitly supported.
+IMPORTANT RULES:
+1. Use ONLY the provided context.
+2. Do not use outside knowledge.
+3. Accept information that is directly stated in the context.
+4. The answer may appear across multiple sentences.
+5. Do not require the exact wording of the question to appear.
+6. If the answer can be obtained directly from the context, reply YES.
+7. If any required information is missing, reply NO.
+8. Reply with ONLY one word: YES or NO.
+
+EXAMPLE:
+
+Context:
+Emma lives with her father, John Smith.
+Her mother is Mary Smith.
+
+Question:
+Who are Emma's parents?
+
+Decision:
+YES
+
+NOW EVALUATE:
 
 Context:
 {state["context"]}
@@ -70,13 +88,15 @@ Question:
 Decision:
 """
 
+
     # Consultamos al modelo
     response = model.invoke(prompt)
 
-    # Normalizamos la respuesta para evitar problemas con espacios
+        # Normalizamos la respuesta del modelo
     decision = str(response.content).strip().upper()
 
-    # Solo aceptamos una respuesta exactamente igual a YES
+
+    # Solo aceptamos respuestas exactamente iguales a YES
     return {"is_answerable": decision == "YES"}
 
 

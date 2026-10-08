@@ -1,64 +1,100 @@
 
-# Importamos Path para trabajar con rutas de archivos
+# Importamos hashlib para generar identificadores únicos
+import hashlib
+
+# Importamos Path para trabajar con archivos y carpetas
 from pathlib import Path
 
-# Importamos Document para representar textos con sus datos de origen
+# Importamos Document para representar nuestros documentos
 from langchain_core.documents import Document
 
-# Importamos la herramienta que divide textos en fragmentos
+# Importamos la herramienta para dividir textos
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Importamos nuestra conexión con ChromaDB
 from backend.vectorstore.vectorstore import get_vectorstore
 
 
-# Definimos la carpeta donde están nuestros documentos
+# Definimos la carpeta de nuestros documentos
 DOCUMENTS_PATH = Path("documents")
 
 
-# Función para leer, procesar y guardar los documentos
+# Función para generar un identificador único por fragmento
+def generate_chunk_id(source: str, index: int) -> str:
+
+    # Combinamos la ruta del archivo con el número del fragmento
+    identifier = f"{source}:{index}"
+
+    # Convertimos el identificador en un hash
+    return hashlib.sha256(identifier.encode("utf-8")).hexdigest()
+
+
+# Función para procesar y almacenar documentos
 def ingest_documents():
 
-    # Obtenemos la conexión con nuestra base vectorial
+    # Obtenemos nuestra base vectorial
     vectorstore = get_vectorstore()
 
-    # Buscamos todos los archivos TXT dentro de documents
-    files = list(DOCUMENTS_PATH.rglob("*.txt"))
+    # Buscamos todos los archivos TXT
+    files = sorted(DOCUMENTS_PATH.rglob("*.txt"))
 
-    # Verificamos si encontramos documentos
+    # Verificamos que existan documentos
     if not files:
         print("No documents found.")
         return
 
-    # Creamos una lista para guardar los documentos leídos
-    documents = []
-
-    # Recorremos cada archivo encontrado
-    for file in files:
-
-        # Leemos el contenido del archivo
-        content = file.read_text(encoding="utf-8")
-
-        # Creamos un documento con su contenido y origen
-        document = Document(
-            page_content=content,
-            metadata={"source": str(file)}
-        )
-
-        # Agregamos el documento a nuestra lista
-        documents.append(document)
-
-    # Configuramos cómo se dividirán los documentos
+    # Configuramos la división de los textos
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,      # Máximo de caracteres por fragmento
-        chunk_overlap=100    # Caracteres compartidos entre fragmentos
+        chunk_size=500,
+        chunk_overlap=100
     )
 
-    # Dividimos los documentos en fragmentos
-    chunks = text_splitter.split_documents(documents)
+    # Contador de fragmentos procesados
+    total_chunks = 0
 
-    # Guardamos los fragmentos y generamos sus embeddings
-    vectorstore.add_documents(chunks)
+    # Recorremos cada archivo
+    for file in files:
 
-    # Mostramos cuántos fragmentos se almacenaron
-    print(f"Successfully stored {len(chunks)} chunks.")
+        # Leemos el contenido del documento
+        content = file.read_text(encoding="utf-8")
+
+        # Ignoramos archivos vacíos
+        if not content.strip():
+            continue
+
+        # Creamos el documento con información de origen
+        document = Document(
+            page_content=content,
+            metadata={"source": file.as_posix()}
+        )
+
+        # Dividimos el documento en fragmentos
+        chunks = text_splitter.split_documents([document])
+
+        # Generamos identificadores únicos para los fragmentos
+        chunk_ids = [
+            generate_chunk_id(file.as_posix(), index)
+            for index in range(len(chunks))
+        ]
+
+        # Consultamos los fragmentos anteriores de este archivo
+        existing = vectorstore.get(
+            where={"source": file.as_posix()}
+        )
+
+        # Eliminamos versiones anteriores del documento
+        if existing["ids"]:
+            vectorstore.delete(ids=existing["ids"])
+
+        # Guardamos los fragmentos actualizados
+        vectorstore.add_documents(
+            documents=chunks,
+            ids=chunk_ids
+        )
+
+        # Actualizamos el contador
+        total_chunks += len(chunks)
+
+    # Mostramos el resultado del procesamiento
+    print(f"Successfully processed {len(files)} documents.")
+    print(f"Successfully stored {total_chunks} chunks.")
