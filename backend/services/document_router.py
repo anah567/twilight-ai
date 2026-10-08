@@ -16,7 +16,9 @@ from backend.vectorstore.vectorstore import get_vectorstore
 
 # Importamos el modelo de usuario y la autenticación
 from backend.database.models import User
-from backend.auth.dependencies import get_current_user
+
+# Importamos la dependencia que exige permisos de administrador
+from backend.auth.dependencies import get_current_admin
 
 
 # Creamos las rutas de documentos
@@ -36,7 +38,7 @@ MAX_FILE_SIZE = 1024 * 1024
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_admin)
 ):
 
     # Verificamos que el archivo tenga un nombre

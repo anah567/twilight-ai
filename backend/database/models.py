@@ -1,7 +1,9 @@
 
 # Importamos los tipos de datos para nuestras columnas
 from datetime import datetime, timezone
-from sqlalchemy import String, Integer, Text, ForeignKey, DateTime
+
+# Importamos los tipos de datos necesarios para nuestras tablas
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Text, Boolean
 
 # Importamos las herramientas para definir columnas y relaciones
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -48,9 +50,17 @@ class User(Base):
         nullable=False
     )
 
-    # Indica si la cuenta está activa
+    # Indicamos si la cuenta del usuario está activa
     is_active: Mapped[bool] = mapped_column(
+        Boolean,
         default=True,
+        nullable=False
+    )
+
+    # Indicamos si el usuario tiene permisos de administrador
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
         nullable=False
     )
 

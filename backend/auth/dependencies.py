@@ -65,3 +65,20 @@ def get_current_user(
 
     # Devolvemos el usuario autenticado
     return user
+
+
+
+# Verificamos que el usuario tenga permisos de administrador
+def get_current_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+
+    # Rechazamos a los usuarios que no sean administradores
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator permissions required."
+        )
+
+    # Devolvemos el usuario administrador
+    return current_user
