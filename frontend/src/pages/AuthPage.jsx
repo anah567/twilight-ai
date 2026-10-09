@@ -3,6 +3,55 @@ import { useState } from "react";
 import { loginUser, registerUser } from "../services/authService";
 import "../styles/AuthPage.css";
 
+// Icono para el correo electrónico
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </svg>
+  );
+}
+
+// Icono para la contraseña
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true">
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+// Icono para el nombre de usuario
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </svg>
+  );
+}
+
+// Icono para mostrar u ocultar la contraseña
+function EyeIcon({ hidden }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {hidden && <path d="M3 3 21 21" />}
+    </svg>
+  );
+}
+
 export default function AuthPage() {
 
   // Controlamos si el usuario está iniciando sesión o registrándose
@@ -14,6 +63,9 @@ export default function AuthPage() {
     email: "",
     password: "",
   });
+
+  // Controlamos si la contraseña es visible
+  const [showPassword, setShowPassword] = useState(false);
 
   // Guardamos los mensajes de éxito o error
   const [message, setMessage] = useState("");
@@ -30,17 +82,20 @@ export default function AuthPage() {
       ...previous,
       [name]: value,
     }));
+
+    // Limpiamos los mensajes al escribir nuevamente
+    if (message) {
+      setMessage("");
+      setIsError(false);
+    }
   };
 
-  // Cambiamos entre iniciar sesión y crear cuenta
+  // Cambiamos entre inicio de sesión y registro
   const changeTab = (registering) => {
-
-    // Actualizamos la pestaña seleccionada
     setIsRegistering(registering);
-
-    // Limpiamos los mensajes anteriores
     setMessage("");
     setIsError(false);
+    setShowPassword(false);
 
     // Limpiamos la contraseña al cambiar de pestaña
     setForm((previous) => ({
@@ -53,7 +108,9 @@ export default function AuthPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Limpiamos los mensajes anteriores
+    // Evitamos enviar el formulario varias veces
+    if (isLoading) return;
+
     setMessage("");
     setIsError(false);
     setIsLoading(true);
@@ -62,53 +119,58 @@ export default function AuthPage() {
 
       if (isRegistering) {
 
-        // Registramos un usuario nuevo
+        // Registramos el nuevo usuario
         await registerUser(
           form.username,
           form.email,
           form.password
         );
 
-        // Cambiamos al formulario de inicio de sesión
+        // Mostramos el formulario de inicio de sesión
         setIsRegistering(false);
+        setShowPassword(false);
 
-        // Limpiamos la contraseña
+        // Limpiamos la contraseña después del registro
         setForm((previous) => ({
           ...previous,
           password: "",
         }));
 
-        // Mostramos un mensaje de éxito
         setMessage(
           "Account created successfully. Please sign in."
         );
 
       } else {
 
-        // Iniciamos sesión utilizando nuestro backend
+        // Iniciamos sesión con FastAPI
         const data = await loginUser(
           form.email,
           form.password
         );
 
-        // Guardamos el token para las siguientes solicitudes
+        // Guardamos el token para utilizarlo en el chat
         sessionStorage.setItem(
           "twilight_token",
           data.access_token
         );
 
-        // Mostramos un mensaje de éxito
+        // Limpiamos la contraseña del formulario
+        setForm((previous) => ({
+          ...previous,
+          password: "",
+        }));
+
         setMessage("Signed in successfully.");
 
-        // Después conectaremos la navegación hacia el chat
+        // Después conectaremos la navegación al chat
       }
 
     } catch (error) {
 
-      // Mostramos el mensaje del error
+      // Mostramos un mensaje si el backend devuelve un error
       setIsError(true);
       setMessage(
-        error.message || "Something went wrong."
+        error.message || "Something went wrong. Please try again."
       );
 
     } finally {
@@ -148,7 +210,7 @@ export default function AuthPage() {
       {/* Sección derecha: formulario de autenticación */}
       <section className="auth-card">
 
-        {/* Pestañas para iniciar sesión o registrarse */}
+        {/* Pestañas de inicio de sesión y registro */}
         <div className="auth-tabs">
 
           <button
@@ -156,6 +218,7 @@ export default function AuthPage() {
             className={!isRegistering ? "active" : ""}
             onClick={() => changeTab(false)}
             disabled={isLoading}
+            aria-pressed={!isRegistering}
           >
             Sign in
           </button>
@@ -165,6 +228,7 @@ export default function AuthPage() {
             className={isRegistering ? "active" : ""}
             onClick={() => changeTab(true)}
             disabled={isLoading}
+            aria-pressed={isRegistering}
           >
             Sign up
           </button>
@@ -185,10 +249,9 @@ export default function AuthPage() {
               : "Continue your journey into the Twilight universe"}
           </p>
 
-          {/* Formulario conectado con FastAPI */}
           <form onSubmit={handleSubmit}>
 
-            {/* El nombre de usuario solo aparece al registrarse */}
+            {/* El nombre de usuario aparece solamente al registrarse */}
             {isRegistering && (
               <div className="auth-field">
 
@@ -196,18 +259,25 @@ export default function AuthPage() {
                   Username
                 </label>
 
-                <input
-                  id="username"
-                  type="text"
-                  name="username"
-                  placeholder="Enter your username"
-                  value={form.username}
-                  onChange={handleChange}
-                  minLength={3}
-                  maxLength={50}
-                  autoComplete="username"
-                  required
-                />
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon">
+                    <UserIcon />
+                  </span>
+
+                  <input
+                    id="username"
+                    type="text"
+                    name="username"
+                    placeholder="Enter your username"
+                    value={form.username}
+                    onChange={handleChange}
+                    minLength={3}
+                    maxLength={50}
+                    autoComplete="username"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
 
               </div>
             )}
@@ -219,16 +289,25 @@ export default function AuthPage() {
                 Email address
               </label>
 
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                value={form.email}
-                onChange={handleChange}
-                autoComplete="email"
-                required
-              />
+              <div className="auth-input-wrapper">
+
+                <span className="auth-input-icon">
+                  <MailIcon />
+                </span>
+
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={form.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  disabled={isLoading}
+                  required
+                />
+
+              </div>
 
             </div>
 
@@ -239,38 +318,74 @@ export default function AuthPage() {
                 Password
               </label>
 
-              <input
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                value={form.password}
-                onChange={handleChange}
-                minLength={8}
-                autoComplete={
-                  isRegistering
-                    ? "new-password"
-                    : "current-password"
-                }
-                required
-              />
+              <div className="auth-input-wrapper">
+
+                <span className="auth-input-icon">
+                  <LockIcon />
+                </span>
+
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={form.password}
+                  onChange={handleChange}
+                  minLength={8}
+                  autoComplete={
+                    isRegistering
+                      ? "new-password"
+                      : "current-password"
+                  }
+                  disabled={isLoading}
+                  required
+                />
+
+                {/* Botón para mostrar u ocultar la contraseña */}
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  aria-pressed={showPassword}
+                >
+                  <EyeIcon hidden={showPassword} />
+                </button>
+
+              </div>
 
             </div>
 
-            {/* Botón para enviar los datos */}
+            {/* Botón principal con indicador de carga */}
             <button
               className="auth-submit"
               type="submit"
               disabled={isLoading}
             >
 
-              {isLoading
-                ? "Please wait..."
-                : isRegistering
-                  ? "Create account"
-                  : "Sign in"}
-
-              <span>→</span>
+              {isLoading ? (
+                <>
+                  <span className="auth-spinner" aria-hidden="true" />
+                  <span>
+                    {isRegistering
+                      ? "Creating account..."
+                      : "Signing in..."}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>
+                    {isRegistering
+                      ? "Create account"
+                      : "Sign in"}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </>
+              )}
 
             </button>
 
@@ -284,7 +399,7 @@ export default function AuthPage() {
                   ? "auth-message-error"
                   : "auth-message-success"
               }`}
-              role="status"
+              role={isError ? "alert" : "status"}
             >
               {message}
             </p>
