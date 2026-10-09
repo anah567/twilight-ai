@@ -52,7 +52,7 @@ function EyeIcon({ hidden }) {
   );
 }
 
-export default function AuthPage() {
+export default function AuthPage({ onLogin }) {
 
   // Controlamos si el usuario está iniciando sesión o registrándose
   const [isRegistering, setIsRegistering] = useState(false);
@@ -148,11 +148,8 @@ export default function AuthPage() {
           form.password
         );
 
-        // Guardamos el token para utilizarlo en el chat
-        sessionStorage.setItem(
-          "twilight_token",
-          data.access_token
-        );
+        // Avisamos a App que el usuario inició sesión correctamente
+        onLogin(data.access_token);
 
         // Limpiamos la contraseña del formulario
         setForm((previous) => ({
