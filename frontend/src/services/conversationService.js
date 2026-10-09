@@ -1,14 +1,31 @@
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-// Obtenemos las conversaciones guardadas del usuario
+// Avisamos a la aplicación cuando la sesión ya no es válida
+function handleExpiredSession() {
+
+  // Enviamos un aviso para que App.jsx regrese al login
+  window.dispatchEvent(new Event("twilight:session-expired"));
+}
+
+// OBTENER TODAS LAS CONVERSACIONES
+
+// Consultamos las conversaciones guardadas del usuario
 export async function getConversations() {
+
+  // Recuperamos el token que guardamos al iniciar sesión
   const token = sessionStorage.getItem("twilight_token");
 
+  // Si no hay token, no podemos consultar las conversaciones
   if (!token) {
-    throw new Error("Please sign in to view your conversations.");
+    handleExpiredSession();
+
+    throw new Error(
+      "Your session has expired. Please sign in again."
+    );
   }
 
+  // Pedimos al backend las conversaciones del usuario
   const response = await fetch(`${API_URL}/conversations`, {
     method: "GET",
     headers: {
@@ -16,9 +33,22 @@ export async function getConversations() {
     },
   });
 
+  // Convertimos la respuesta del backend a un objeto de JavaScript
   const data = await response.json();
 
+  // Comprobamos si ocurrió algún error
   if (!response.ok) {
+
+    // Si el token venció, avisamos para cerrar la sesión
+    if (response.status === 401) {
+      handleExpiredSession();
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+    }
+
+    // Mostramos cualquier otro error del backend
     throw new Error(
       typeof data.detail === "string"
         ? data.detail
@@ -26,17 +56,29 @@ export async function getConversations() {
     );
   }
 
+  // Devolvemos las conversaciones para mostrarlas en React
   return data;
 }
 
-// Obtenemos los mensajes de una conversación específica
+
+// OBTENER UNA CONVERSACIÓN ESPECÍFICA
+
+// Consultamos los mensajes de una conversación guardada
 export async function getConversationById(conversationId) {
+
+  // Recuperamos el token del usuario autenticado
   const token = sessionStorage.getItem("twilight_token");
 
+  // Comprobamos que exista una sesión
   if (!token) {
-    throw new Error("Please sign in to view this conversation.");
+    handleExpiredSession();
+
+    throw new Error(
+      "Your session has expired. Please sign in again."
+    );
   }
 
+  // Pedimos al backend la conversación que seleccionamos
   const response = await fetch(
     `${API_URL}/conversations/${conversationId}`,
     {
@@ -47,9 +89,22 @@ export async function getConversationById(conversationId) {
     }
   );
 
+  // Convertimos la respuesta a un objeto de JavaScript
   const data = await response.json();
 
+  // Comprobamos si la solicitud falló
   if (!response.ok) {
+
+    // Si el token ya no es válido, cerramos la sesión
+    if (response.status === 401) {
+      handleExpiredSession();
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+    }
+
+    // Mostramos los demás errores que pueda devolver el backend
     throw new Error(
       typeof data.detail === "string"
         ? data.detail
@@ -57,5 +112,6 @@ export async function getConversationById(conversationId) {
     );
   }
 
+  // Devolvemos la conversación con todos sus mensajes
   return data;
 }

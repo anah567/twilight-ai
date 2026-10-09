@@ -269,3 +269,185 @@
   .chat-conversation-item { min-height: 49px; padding: 8px 11px; }
   .chat-sidebar-bottom { flex-shrink: 0; }
 }
+
+
+/* Ajustes para tablets */
+@media (min-width: 651px) and (max-width: 950px) {
+  .chat-page {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .chat-sidebar,
+  .chat-main {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .chat-main {
+    overflow: hidden;
+  }
+
+  .chat-welcome h1 {
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+  }
+
+  .chat-suggestions {
+    width: 100%;
+  }
+}
+
+/* Ajustes para celulares */
+@media (max-width: 650px) {
+  .chat-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    height: auto;
+    padding: 8px;
+  }
+
+  .chat-sidebar {
+    width: 100%;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .chat-brand {
+    margin-bottom: 10px;
+  }
+
+  .chat-brand h2 {
+    font-size: 1.55rem;
+  }
+
+  .chat-brand-decoration {
+    margin-top: 4px;
+  }
+
+  .new-chat-button {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .chat-navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .chat-navigation button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 9px 7px;
+    font-size: 0.75rem;
+  }
+
+  .chat-sidebar-divider {
+    margin: 10px 4px;
+  }
+
+  .chat-history-section {
+    max-height: 105px;
+    overflow-y: auto;
+  }
+
+  .chat-conversation-item {
+    min-height: 45px;
+  }
+
+  .chat-sidebar-bottom {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .chat-profile-info strong {
+    font-size: 0.75rem;
+  }
+
+  .chat-main {
+    width: 100%;
+    min-height: 65dvh;
+    padding: 22px 14px 16px;
+  }
+
+  .chat-welcome {
+    margin: 24px auto;
+  }
+
+  .chat-welcome-decoration {
+    margin-bottom: 8px;
+  }
+
+  .chat-welcome h1 {
+    font-size: clamp(1.9rem, 7.5vw, 2.4rem);
+  }
+
+  .chat-welcome-description {
+    margin: 12px auto 18px;
+    font-size: 0.83rem;
+  }
+
+  .chat-suggestions {
+    width: 100%;
+    gap: 9px;
+  }
+
+  .chat-suggestion {
+    min-height: 48px;
+    padding: 11px 13px;
+  }
+
+  .chat-input-container {
+    width: 100%;
+    min-height: 56px;
+    gap: 8px;
+    padding: 5px 6px 5px 14px;
+  }
+
+  .chat-input-container input {
+    font-size: 0.85rem;
+  }
+
+  .chat-send-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .chat-messages {
+    width: 100%;
+    min-height: 200px;
+    max-height: 55dvh;
+    padding: 12px 2px 18px;
+  }
+
+  .chat-message {
+    max-width: 95%;
+    padding: 12px 14px;
+  }
+}
+
+/* Celulares pequeños */
+@media (max-width: 380px) {
+  .chat-page {
+    padding: 5px;
+  }
+
+  .chat-sidebar {
+    padding: 10px;
+  }
+
+  .chat-navigation button {
+    font-size: 0.7rem;
+  }
+
+  .chat-main {
+    padding: 18px 10px 12px;
+  }
+
+  .chat-welcome h1 {
+    font-size: 1.8rem;
+  }
+}

@@ -35,8 +35,13 @@ def ingest_documents():
     # Obtenemos nuestra base vectorial
     vectorstore = get_vectorstore()
 
-    # Buscamos todos los archivos TXT
-    files = sorted(DOCUMENTS_PATH.rglob("*.txt"))
+    # Buscamos los documentos originales
+    # Ignoramos los archivos cargados desde la interfaz
+    files = sorted(
+        file
+        for file in DOCUMENTS_PATH.rglob("*.txt")
+        if "uploads" not in file.relative_to(DOCUMENTS_PATH).parts
+    )
 
     # Verificamos que existan documentos
     if not files:
@@ -62,10 +67,18 @@ def ingest_documents():
         if not content.strip():
             continue
 
-        # Creamos el documento con información de origen
+        # Generamos una huella digital del contenido del archivo
+        content_hash = hashlib.sha256(
+            content.encode("utf-8")
+        ).hexdigest()
+
+        # Creamos el documento con su origen y su huella digital
         document = Document(
             page_content=content,
-            metadata={"source": file.as_posix()}
+            metadata={
+                "source": file.as_posix(),
+                "content_hash": content_hash
+            }
         )
 
         # Dividimos el documento en fragmentos
@@ -76,6 +89,23 @@ def ingest_documents():
             generate_chunk_id(file.as_posix(), index)
             for index in range(len(chunks))
         ]
+
+
+        # Buscamos si este contenido ya fue cargado desde la interfaz
+        uploaded_copy = vectorstore.get(
+            where={
+                "$and": [
+                    {"content_hash": content_hash},
+                    {"document_id": {"$ne": ""}}
+                ]
+            }
+        )
+
+        # Si ya existe una copia administrada, no indexamos el original
+        if uploaded_copy["ids"]:
+            print(f"Skipped duplicate: {file.name}")
+            continue
+
 
         # Consultamos los fragmentos anteriores de este archivo
         existing = vectorstore.get(

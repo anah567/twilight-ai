@@ -360,19 +360,22 @@ export default function ChatPage({ onLogout, user = null }) {
                         <span>Chat History</span>
                     </button>
 
-                    <button
-                        type="button"
-                        className={
-                            activeView === "documents" ? "chat-nav-active" : ""
-                        }
-                        aria-current={
-                            activeView === "documents" ? "page" : undefined
-                        }
-                        onClick={() => setActiveView("documents")}
-                    >
-                        <Icon name="document" size={18} />
-                        <span>Document Library</span>
-                    </button>
+                    {/* Mostramos la biblioteca solo a los administradores */}
+                    {user?.is_admin === true && (
+                        <button
+                            type="button"
+                            className={
+                                activeView === "documents" ? "chat-nav-active" : ""
+                            }
+                            aria-current={
+                                activeView === "documents" ? "page" : undefined
+                            }
+                            onClick={() => setActiveView("documents")}
+                        >
+                            <Icon name="document" size={18} />
+                            <span>Document Library</span>
+                        </button>
+                    )}
                 </nav>
 
                 <div className="chat-sidebar-divider" />

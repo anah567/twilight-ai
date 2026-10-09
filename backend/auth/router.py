@@ -27,6 +27,8 @@ from backend.auth.security import (
     create_access_token
 )
 
+from backend.auth.dependencies import get_current_user
+
 
 # Creamos las rutas de autenticación
 router = APIRouter(
@@ -142,3 +144,18 @@ def login_user(
         access_token=access_token,
         token_type="bearer"
     )
+
+# ==========================================
+# PERFIL DEL USUARIO AUTENTICADO
+# ==========================================
+
+# Devolvemos los datos del usuario que inició sesión
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK
+)
+def get_my_profile(
+    current_user: User = Depends(get_current_user)
+):
+    return current_user

@@ -9,6 +9,7 @@ export async function sendMessage(message, conversationId = null) {
 
     // Comprobamos que exista una sesión
     if (!token) {
+        window.dispatchEvent(new Event("twilight:session-expired"));
         throw new Error("Your session has expired. Please sign in again.");
     }
 
@@ -19,6 +20,7 @@ export async function sendMessage(message, conversationId = null) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
+
         // Enviamos los datos con los nombres que espera FastAPI
         body: JSON.stringify({
             question: message,
@@ -31,10 +33,17 @@ export async function sendMessage(message, conversationId = null) {
 
     // Mostramos un error si la solicitud falla
     if (!response.ok) {
+
+        // Si el token venció, avisamos a React
         if (response.status === 401) {
-            throw new Error("Your session has expired. Please sign in again.");
+            window.dispatchEvent(new Event("twilight:session-expired"));
+
+            throw new Error(
+                "Your session has expired. Please sign in again."
+            );
         }
 
+        // Mostramos los demás errores del backend
         throw new Error(
             typeof data.detail === "string"
                 ? data.detail

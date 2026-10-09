@@ -19,10 +19,20 @@ class UserRegister(BaseModel):
 # Datos que podemos devolver públicamente
 class UserResponse(BaseModel):
 
+    # Identificador del usuario
     id: int
+
+    # Nombre del usuario
     username: str
+
+    # Correo electrónico
     email: EmailStr
+
+    # Indica si la cuenta está activa
     is_active: bool
+
+    # Indica si el usuario tiene permisos de administrador
+    is_admin: bool
 
     # Permite convertir modelos de SQLAlchemy en respuestas
     model_config = ConfigDict(from_attributes=True)
