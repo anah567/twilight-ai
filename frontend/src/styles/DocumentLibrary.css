@@ -1,26 +1,44 @@
 
+/* Biblioteca de documentos */
 .document-library {
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  padding: 38px 46px;
+  overflow-x: hidden;
+  padding: 28px 46px 45px;
   color: #f4eeeb;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 77, 95, 0.5) transparent;
 }
 
+.document-library::-webkit-scrollbar {
+  width: 6px;
+}
+
+.document-library::-webkit-scrollbar-thumb {
+  background: rgba(157, 77, 95, 0.5);
+  border-radius: 10px;
+}
+
+/* Encabezado */
 .document-library-header {
-  margin-bottom: 35px;
+  margin-bottom: 25px;
 }
 
 .document-back-button {
-  padding: 8px 0;
-  margin-bottom: 35px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  margin-bottom: 17px;
   border: none;
   background: transparent;
   color: #d6b3bb;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .document-back-button:hover {
@@ -33,16 +51,17 @@
 
 .document-library-moon {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 9px;
   color: #e8d5d3;
-  font-size: 36px;
+  font-size: 32px;
 }
 
 .document-library-heading h1 {
   margin: 0;
   font-family: Georgia, serif;
-  font-size: clamp(2.2rem, 4vw, 3.6rem);
+  font-size: clamp(2.2rem, 3.6vw, 3.2rem);
   font-weight: 400;
+  line-height: 1.2;
 }
 
 .document-library-heading h1 span {
@@ -50,49 +69,283 @@
 }
 
 .document-library-heading p {
-  margin-top: 15px;
+  margin: 12px 0 0;
   color: #d0c8c6;
-  font-size: 0.95rem;
+  font-size: 0.91rem;
+  line-height: 1.6;
 }
 
+/* Contador de documentos */
 .document-library-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
-  padding: 15px 20px;
-  background: rgba(5, 19, 20, 0.78);
+  margin-bottom: 17px;
+  padding: 12px 17px;
+  background: rgba(5, 19, 20, 0.82);
   border: 1px solid rgba(225, 221, 217, 0.15);
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 .document-library-summary span {
   color: #d3a0ac;
-  font-size: 0.72rem;
-  letter-spacing: 1.4px;
+  font-size: 0.69rem;
+  font-weight: 600;
+  letter-spacing: 1.3px;
 }
 
 .document-library-summary strong {
-  font-size: 0.85rem;
+  color: #eee5e1;
+  font-size: 0.8rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
+/* Formulario para subir archivos */
+.document-upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 21px;
+  padding: 20px;
+  background: rgba(5, 19, 20, 0.88);
+  border: 1px solid rgba(225, 221, 217, 0.17);
+  border-radius: 15px;
+}
+
+.document-upload-info {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.document-upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 43px;
+  height: 43px;
+  border-radius: 11px;
+  background: rgba(109, 35, 53, 0.55);
+  color: #e0a8b6;
+  font-size: 24px;
+}
+
+.document-upload-info h3 {
+  margin: 0 0 5px;
+  color: #f4eeeb;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.document-upload-info p {
+  margin: 0;
+  color: #b9b0af;
+  font-size: 0.79rem;
+}
+
+/* Zona para arrastrar archivos */
+.document-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 195px;
+  padding: 24px 18px;
+  background: rgba(6, 29, 26, 0.88);
+  border: 1.5px dashed rgba(164, 68, 91, 0.65);
+  border-radius: 13px;
+  text-align: center;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.document-dropzone > svg {
+  color: #d1a0ad;
+  margin-bottom: 2px;
+}
+
+.document-dropzone h4 {
+  margin: 0;
+  color: #f1e7e2;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.document-dropzone p {
+  margin: 0;
+  color: #aeb9b3;
+  font-size: 0.79rem;
+}
+
+.document-dropzone-active {
+  background: rgba(45, 37, 39, 0.95);
+  border-color: #d29aa9;
+  box-shadow: inset 0 0 0 1px rgba(210, 154, 169, 0.3);
+}
+
+/* Ocultamos el selector original */
+.document-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Botón para buscar archivos */
+.document-browse-button {
+  margin-top: 6px;
+  padding: 10px 21px;
+  background: rgba(109, 35, 53, 0.8);
+  border: 1px solid rgba(186, 88, 110, 0.6);
+  border-radius: 9px;
+  color: #fff2f0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.document-browse-button:hover:not(:disabled) {
+  background: #883149;
+  transform: translateY(-1px);
+}
+
+.document-file-hint {
+  color: #879991;
+  font-size: 0.72rem;
+}
+
+/* Archivo seleccionado */
+.document-upload-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.document-selected-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  color: #c8d1cb;
+  font-size: 0.82rem;
+}
+
+.document-selected-file svg {
+  flex-shrink: 0;
+  color: #d0a0ad;
+}
+
+.document-selected-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botón para subir documentos */
+.document-upload-actions > button {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  background: #702638;
+  border: 1px solid #a0445c;
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.document-upload-actions > button:hover:not(:disabled) {
+  background: #883149;
+  transform: translateY(-1px);
+}
+
+.document-upload-actions button:disabled,
+.document-browse-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mensajes de éxito y error */
+.document-upload-success,
+.document-library-error,
+.document-library-status {
+  margin: 0 0 19px;
+  padding: 14px 17px;
+  border-radius: 11px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.document-upload-success {
+  background: rgba(23, 67, 54, 0.85);
+  border: 1px solid rgba(102, 174, 139, 0.4);
+  color: #d0f2df;
+}
+
+.document-library-error {
+  background: rgba(110, 28, 45, 0.8);
+  border: 1px solid rgba(190, 80, 100, 0.35);
+  color: #ffd1d8;
+}
+
+.document-library-status {
+  background: rgba(5, 19, 20, 0.78);
+  color: #d0c8c6;
+  text-align: center;
+}
+
+/* Tarjetas de documentos */
 .document-library-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 15px;
+  padding-bottom: 12px;
 }
 
 .document-library-card {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
   min-width: 0;
-  padding: 22px;
-  background: rgba(5, 19, 20, 0.86);
-  border: 1px solid rgba(225, 221, 217, 0.18);
-  border-radius: 15px;
+  min-height: 94px;
+  padding: 18px;
+  background: rgba(5, 19, 20, 0.88);
+  border: 1px solid rgba(225, 221, 217, 0.16);
+  border-radius: 14px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.document-library-card:hover {
+  background: rgba(9, 29, 28, 0.96);
+  border-color: rgba(164, 68, 91, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
 .document-library-icon {
@@ -100,12 +353,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 45px;
+  height: 45px;
   background: rgba(109, 35, 53, 0.55);
-  border-radius: 12px;
+  border-radius: 11px;
   color: #e0a8b6;
-  font-size: 25px;
 }
 
 .document-library-card-info {
@@ -115,181 +367,45 @@
 
 .document-library-card-info h3 {
   margin: 0 0 7px;
-  font-size: 0.91rem;
+  color: #f0e9e5;
+  font-size: 0.88rem;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .document-library-card-info p {
   margin: 0;
-  color: #b9b0af;
-  font-size: 0.76rem;
+  color: #aeb9b3;
+  font-size: 0.74rem;
 }
 
-.document-library-card-decoration {
-  color: #a66a7b;
-  font-size: 18px;
+/* Estado del documento, si existe */
+.document-card-status {
+  display: inline-block;
+  margin-top: 7px;
+  color: #b8d7c3;
+  font-size: 0.72rem;
+  text-transform: capitalize;
 }
 
-.document-library-status,
-.document-library-error {
-  padding: 18px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 0.88rem;
-}
-
-.document-library-status {
-  background: rgba(5, 19, 20, 0.78);
-  color: #d0c8c6;
-}
-
-.document-library-error {
-  background: rgba(110, 28, 45, 0.8);
-  color: #ffd1d8;
-}
-
-@media (max-width: 900px) {
-  .document-library {
-    padding: 28px 24px;
-  }
-
-  .document-library-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .document-library {
-    padding: 22px 16px;
-  }
-
-  .document-library-card {
-    padding: 16px;
-  }
-}
-
-
-/* ==========================================
-   UPLOAD DOCUMENT
-   ========================================== */
-
-.document-upload-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: 24px;
-  padding: 22px;
-  background: rgba(5, 19, 20, 0.82);
-  border: 1px solid rgba(225, 221, 217, 0.18);
-  border-radius: 15px;
-}
-
-.document-upload-info {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.document-upload-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: rgba(109, 35, 53, 0.55);
-  color: #e0a8b6;
-  font-size: 25px;
-}
-
-.document-upload-info h3 {
-  margin: 0 0 5px;
-  color: #f4eeeb;
-  font-size: 0.95rem;
-}
-
-.document-upload-info p {
-  margin: 0;
-  color: #b9b0af;
-  font-size: 0.8rem;
-}
-
-.document-upload-actions {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.document-upload-actions input {
-  flex: 1;
-  min-width: 180px;
-  color: #d0c8c6;
-  font-family: inherit;
-  font-size: 0.8rem;
-}
-
-.document-upload-actions input::file-selector-button {
-  margin-right: 12px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(225, 221, 217, 0.2);
-  border-radius: 9px;
-  color: #f4eeeb;
-  cursor: pointer;
-}
-
-.document-upload-actions button {
-  padding: 12px 20px;
-  background: #702638;
-  border: 1px solid #a0445c;
-  border-radius: 10px;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.document-upload-actions button:hover:not(:disabled) {
-  background: #883149;
-}
-
-.document-upload-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.document-upload-success {
-  margin-bottom: 20px;
-  padding: 13px 16px;
-  background: rgba(23, 67, 54, 0.85);
-  border: 1px solid rgba(102, 174, 139, 0.4);
-  border-radius: 10px;
-  color: #d0f2df;
-  font-size: 0.85rem;
-}
-
-
-/* ==========================================
-   DELETE DOCUMENT
-   ========================================== */
-
+/* Botón para eliminar */
 .document-delete-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
   flex-shrink: 0;
+  width: 37px;
+  height: 37px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 9px;
   color: #d99aa9;
-  font-size: 19px;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .document-delete-button:hover {
@@ -297,6 +413,7 @@
   border-color: rgba(190, 80, 100, 0.4);
 }
 
+/* Ventana de confirmación */
 .document-delete-overlay {
   position: fixed;
   inset: 0;
@@ -312,7 +429,7 @@
 .document-delete-modal {
   width: 100%;
   max-width: 430px;
-  padding: 35px;
+  padding: 34px;
   background: #101b1d;
   border: 1px solid rgba(180, 90, 110, 0.4);
   border-radius: 18px;
@@ -323,9 +440,9 @@
 
 .document-delete-moon {
   display: block;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   color: #d7a0af;
-  font-size: 36px;
+  font-size: 35px;
 }
 
 .document-delete-modal h2 {
@@ -336,9 +453,9 @@
 }
 
 .document-delete-modal p {
-  margin: 0 0 28px;
+  margin: 0 0 27px;
   color: #c6babb;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.7;
   overflow-wrap: anywhere;
 }
@@ -357,7 +474,7 @@
   padding: 12px;
   border-radius: 10px;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   cursor: pointer;
 }
 
@@ -382,4 +499,128 @@
   cursor: not-allowed;
 }
 
+/* Navegación con teclado */
+.document-library button:focus-visible {
+  outline: 2px solid #c78394;
+  outline-offset: 3px;
+}
+
+/* Pantallas medianas */
+@media (max-width: 900px) {
+  .document-library {
+    padding: 25px 24px 35px;
+  }
+
+  .document-library-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .document-library-heading h1 {
+    font-size: clamp(2.1rem, 5vw, 2.8rem);
+  }
+}
+
+/* Celulares */
+@media (max-width: 600px) {
+  .document-library {
+    padding: 20px 16px 32px;
+  }
+
+  .document-library-header {
+    margin-bottom: 22px;
+  }
+
+  .document-back-button {
+    margin-bottom: 15px;
+  }
+
+  .document-library-heading h1 {
+    font-size: 2.1rem;
+  }
+
+  .document-library-heading p {
+    font-size: 0.82rem;
+  }
+
+  .document-library-summary {
+    padding: 12px;
+  }
+
+  .document-upload-form {
+    padding: 15px;
+  }
+
+  .document-dropzone {
+    min-height: 180px;
+    padding: 22px 12px;
+  }
+
+  .document-upload-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .document-selected-file {
+    width: 100%;
+  }
+
+  .document-upload-actions > button {
+    width: 100%;
+  }
+
+  .document-library-card {
+    padding: 15px;
+  }
+
+  .document-delete-modal {
+    padding: 26px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .document-library-card,
+  .document-browse-button,
+  .document-upload-actions > button {
+    transition: none;
+  }
+}
+
+
+/* Subimos el contenido de la biblioteca */
+.document-library {
+  padding-top: 4px;
+}
+
+/* Reducimos los espacios del encabezado */
+.document-library-header {
+  margin-bottom: 12px;
+}
+
+.document-back-button {
+  margin-bottom: 2px;
+  padding: 4px 0;
+}
+
+/* Acercamos la luna y el título */
+.document-library-moon {
+  margin-bottom: 2px;
+  font-size: 28px;
+}
+
+.document-library-heading h1 {
+  font-size: clamp(2.1rem, 3.3vw, 3rem);
+}
+
+.document-library-heading p {
+  margin-top: 5px;
+}
+
+/* Acercamos el contador y la zona de carga */
+.document-library-summary {
+  margin-bottom: 10px;
+}
+
+.document-upload-form {
+  margin-bottom: 14px;
+}
 

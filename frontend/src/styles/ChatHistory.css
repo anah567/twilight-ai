@@ -1,0 +1,292 @@
+
+/* Pantalla del historial */
+.history-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 30px 46px 45px;
+  color: #f4eeeb;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 77, 95, 0.5) transparent;
+}
+
+/* Encabezado */
+.history-header {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.history-moon {
+  display: block;
+  margin-bottom: 8px;
+  color: #e8d5d3;
+  font-size: 32px;
+}
+
+.history-header h1 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: clamp(2.2rem, 3.5vw, 3.2rem);
+  font-weight: 400;
+}
+
+.history-header h1 span {
+  color: #a83b52;
+}
+
+.history-header p {
+  max-width: 580px;
+  margin: 12px auto 0;
+  color: #d0c8c6;
+  font-size: 0.91rem;
+  line-height: 1.6;
+}
+
+/* Contador de conversaciones */
+.history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 17px;
+  background: rgba(5, 19, 20, 0.82);
+  border: 1px solid rgba(225, 221, 217, 0.15);
+  border-radius: 11px;
+}
+
+.history-summary span {
+  color: #d3a0ac;
+  font-size: 0.69rem;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+}
+
+.history-summary strong {
+  color: #eee5e1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Botón para crear un chat */
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.history-actions button,
+.history-empty button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 19px;
+  background: #702638;
+  border: 1px solid #a0445c;
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.history-actions button:hover,
+.history-empty button:hover {
+  background: #883149;
+  transform: translateY(-1px);
+}
+
+/* Lista de conversaciones */
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 15px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  min-height: 98px;
+  padding: 20px;
+  background: rgba(5, 19, 20, 0.88);
+  border: 1px solid rgba(225, 221, 217, 0.17);
+  border-radius: 15px;
+  color: #f4eeeb;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.history-card:hover {
+  background: rgba(12, 31, 29, 0.96);
+  border-color: rgba(164, 68, 91, 0.6);
+  transform: translateY(-2px);
+}
+
+.history-card-active {
+  background: rgba(80, 29, 43, 0.55);
+  border-color: rgba(164, 68, 91, 0.75);
+}
+
+/* Icono de conversación */
+.history-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  background: rgba(109, 35, 53, 0.55);
+  border-radius: 12px;
+  color: #e0a8b6;
+}
+
+/* Título y fecha */
+.history-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-card-info h3 {
+  margin: 0 0 8px;
+  overflow: hidden;
+  color: #f0e9e5;
+  font-size: 0.91rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-card-info p {
+  margin: 0;
+  color: #aeb9b3;
+  font-size: 0.77rem;
+}
+
+.history-card-arrow {
+  flex-shrink: 0;
+  color: #d3a0ac;
+  font-size: 23px;
+  transition: transform 0.2s ease;
+}
+
+.history-card:hover .history-card-arrow {
+  transform: translateX(4px);
+}
+
+/* Mensajes de carga y error */
+.history-message,
+.history-error {
+  padding: 18px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.history-message {
+  background: rgba(5, 19, 20, 0.78);
+  color: #d0c8c6;
+}
+
+.history-error {
+  background: rgba(110, 28, 45, 0.8);
+  color: #ffd1d8;
+}
+
+/* Historial vacío */
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 55px 20px;
+  background: rgba(5, 19, 20, 0.8);
+  border: 1px solid rgba(225, 221, 217, 0.15);
+  border-radius: 15px;
+  text-align: center;
+}
+
+.history-empty > span {
+  color: #e8d5d3;
+  font-size: 38px;
+}
+
+.history-empty h2 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.history-empty p {
+  margin: 0 0 8px;
+  color: #b9b0af;
+  font-size: 0.87rem;
+  line-height: 1.6;
+}
+
+/* Navegación con teclado */
+.history-page button:focus-visible {
+  outline: 2px solid #c78394;
+  outline-offset: 3px;
+}
+
+/* Pantallas medianas */
+@media (max-width: 900px) {
+  .history-page {
+    padding: 25px 24px 35px;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Celulares */
+@media (max-width: 600px) {
+  .history-page {
+    padding: 20px 16px 32px;
+  }
+
+  .history-header h1 {
+    font-size: 2.1rem;
+  }
+
+  .history-header p {
+    font-size: 0.82rem;
+  }
+
+  .history-summary {
+    padding: 12px;
+  }
+
+  .history-card {
+    min-height: 85px;
+    padding: 15px;
+  }
+
+  .history-actions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-card,
+  .history-card-arrow,
+  .history-actions button,
+  .history-empty button {
+    transition: none;
+  }
+}
