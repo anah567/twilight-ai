@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 
+// Dirección de nuestro backend FastAPI
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 export default function App() {
 
   // Comprobamos si existe una sesión guardada en esta pestaña
@@ -36,8 +39,9 @@ export default function App() {
       try {
 
         // Pedimos los datos del usuario al backend
+        // Consultamos el perfil del usuario en nuestro backend
         const response = await fetch(
-          "http://127.0.0.1:8000/auth/me",
+          `${API_URL}/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
