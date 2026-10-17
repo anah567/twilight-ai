@@ -1,14 +1,11 @@
-# Importamos os para leer variables de entorno
-import os
 
-# Importamos ChatOllama para conectar LangChain con Ollama
-from langchain_ollama import ChatOllama
+# Importamos ChatGroq para conectar LangChain con Groq
+from langchain_groq import ChatGroq
 
 # Configuramos nuestro modelo de inteligencia artificial
-model = ChatOllama(
-    model="qwen2.5:3b",
-    temperature=0,
-    base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+model = ChatGroq(
+    model="openai/gpt-oss-20b",
+    temperature=0
 )
 
 
