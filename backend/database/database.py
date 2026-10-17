@@ -3,9 +3,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+# Importamos os para leer variables de entorno
+import os
 
 # Definimos la ubicación de nuestra base de datos SQLite
-DATABASE_URL = "sqlite:///./twilight.db"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./twilight.db"
+)
 
 
 # Creamos el motor que conecta Python con SQLite

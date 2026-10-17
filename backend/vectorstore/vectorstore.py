@@ -5,10 +5,14 @@ from langchain_chroma import Chroma
 # Importamos el modelo que convierte textos en vectores
 from langchain_huggingface import HuggingFaceEmbeddings
 
+# Importamos os para leer variables de entorno
+import os
 
 # Definimos dónde se guardará nuestra base vectorial
-DATABASE_PATH = "./chroma_db"
-
+DATABASE_PATH = os.getenv(
+    "CHROMA_DB_PATH",
+    "./chroma_db"
+)
 # Definimos el nombre de nuestra colección
 COLLECTION_NAME = "twilight_knowledge"
 

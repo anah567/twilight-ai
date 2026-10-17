@@ -1,0 +1,26 @@
+# Entorno virtual de Python
+.venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Variables de entorno y datos privados
+.env
+.env.*
+!.env.example
+
+# Bases de datos locales
+twilight.db
+chroma_db/
+
+# Archivos de Git
+.git/
+
+# Dependencias del frontend
+frontend/node_modules/
+frontend/dist/
+
+# Archivos del sistema
+.DS_Store

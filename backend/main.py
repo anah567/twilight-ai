@@ -32,6 +32,12 @@ from backend.database.models import User, Conversation, Message
 # Importamos las rutas para administrar documentos
 from backend.services.document_router import router as document_router
 
+# Importamos la base y el motor para crear las tablas
+from backend.database.database import Base, engine
+
+# Importamos los modelos para registrar las tablas
+import backend.database.models
+
 
 # ==========================================
 # CONFIGURACIÓN DE FASTAPI
@@ -43,6 +49,9 @@ app = FastAPI(
     description="AI assistant specialized in the Twilight saga",
     version="1.0.0"
 )
+
+# Creamos las tablas de SQLite si todavía no existen
+Base.metadata.create_all(bind=engine)
 
 # Obtenemos los dominios autorizados desde las variables de entorno
 allowed_origins = [

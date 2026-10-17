@@ -1,0 +1,35 @@
+
+services:
+
+  # Servicio del backend con FastAPI
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      DATABASE_URL: sqlite:////app/data/twilight.db
+      CHROMA_DB_PATH: /app/data/chroma_db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    volumes:
+      - twilight_data:/app/data
+    restart: unless-stopped
+
+  # Servicio del frontend con React y Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Volumen para conservar los datos
+volumes:
+  twilight_data:
