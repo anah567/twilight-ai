@@ -38,6 +38,12 @@ from backend.database.database import Base, engine
 # Importamos los modelos para registrar las tablas
 import backend.database.models
 
+# Importamos herramientas para mostrar errores en los logs
+import logging
+
+# Configuramos el registro de errores
+logger = logging.getLogger(__name__)
+
 
 # ==========================================
 # CONFIGURACIÓN DE FASTAPI
@@ -206,6 +212,9 @@ def chat(
         )
 
     except Exception:
+
+        # Mostramos el error completo en los logs de Railway
+        logger.exception("Error generating AI response")
 
         # Descartamos cualquier cambio pendiente en la base de datos
         db.rollback()
